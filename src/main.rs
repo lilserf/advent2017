@@ -64,6 +64,61 @@ fn day1b()
 	println!("Sum was {}", sum);
 }
 
+fn find_common_divisor(nums: &Vec<u32>) -> u32
+{
+	for (i, el1) in nums.iter().enumerate()
+	{
+		for el2 in &nums[i+1..]
+		{
+			if el1 % el2 == 0
+			{
+				return el1 / el2;
+			}
+			else if el2 % el1 == 0
+			{
+				return el2 / el1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+fn day2()
+{
+	let input = get_input("day2.txt");
+
+	let mut sum = 0;
+	let mut sumb = 0;
+	for l in input.lines()
+	{
+		let nums: Vec<u32> = l.split("\t").map(|w| w.parse().unwrap()).collect();
+
+		{
+			// part a
+			let mut min = nums[0];
+			let mut max = nums[0];
+			for &n in &nums
+			{
+				if n > max
+				{
+					max = n;
+				}
+				if n < min
+				{
+					min = n;
+				}
+			}
+			sum += max-min;
+		}
+
+		sumb += find_common_divisor(&nums);
+	}
+
+	println!("Checksum is {}", sum);
+	println!("Part b is {}", sumb);
+}
+
 fn get_input(name:&str) -> String
 {
 	let prefix = String::from("input/");
@@ -85,7 +140,8 @@ fn main()
 {
 	let now = Instant::now();
     //day1();
-	day1b();
+	//day1b();
+	day2();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
