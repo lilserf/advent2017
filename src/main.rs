@@ -305,6 +305,7 @@ fn day3()
 	}
 }
 
+#[allow(dead_code)]
 fn day4()
 {
 	let input = get_input("day4.txt");
@@ -359,6 +360,38 @@ fn day4()
 	println!("File contains {} valid non-anagrammed passphrases.", count.1);
 }
 
+fn day5()
+{
+	let input = get_input("day5.txt");
+
+	let mut instructions:Vec<i32> = input.lines().map(|x| x.parse().unwrap()).collect();
+
+	let mut pc:i32 = 0;
+	let mut steps = 0;
+
+	while pc >= 0 && pc < instructions.len() as i32
+	{
+		let newpc = pc + instructions[pc as usize];
+		// Part A logic
+		//instructions[pc as usize] += 1;
+		// End Part A logic
+		// Part B logic
+		if instructions[pc as usize] >= 3
+		{
+			instructions[pc as usize] -= 1;
+		}
+		else
+		{
+			instructions[pc as usize] += 1;
+		}
+		// End Part B logic
+		pc = newpc;
+		steps += 1;
+	}
+
+	println!("Took {} steps", steps);
+}
+
 // Helper function to read a string from an input file
 fn get_input(name:&str) -> String
 {
@@ -385,7 +418,8 @@ fn main()
 	//day1b();
 	//day2();
 	//day3();
-	day4();
+	//day4();
+	day5();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
