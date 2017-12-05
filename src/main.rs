@@ -161,45 +161,19 @@ fn day2()
 // So 1 is at (0,0), 2 is at (1,0), 3 is at (1,-1), etc.
 //
 
-// Given a ring index (see above), get the biggest number in that ring
-fn biggest_in_ring(ring:i32) -> i32
-{
-	let size = ring * 8;
-
-	if ring > 0
-	{
-		// Return the previous ring's biggest plus our size
-		return biggest_in_ring(ring-1) + size;
-	}
-	else
-	{
-		// Ring 0 has a 1 and that's all
-		return 1;
-	}
-}
-
 // Given a number in the spiral, what coordinate will it be at?
 fn coord_for_input(input:i32) -> (i32, i32)
 {
-	let mut ring = 1;
-	
-	// Find the ring this number falls into
-	// This is kinda inefficient since biggest_in_ring is rechecking the same stuff over and over
-	while biggest_in_ring(ring) < input
-	{
-		ring += 1;
-	}
-
-	// This ring ends at this value
-	let ring_end = biggest_in_ring(ring);
-	// This ring starts at this value
-	let ring_start = ring_end - (ring * 8) + 1;
+	// Ring num is the square root of the number - 1, / 2, rounded up
+	let ring = (((input as f32).sqrt() - 1.0) / 2.0).ceil() as i32;
 	// This ring has "sides" of this size
 	let ring_side = ring * 2 + 1;
+	// This ring starts at this value
+	let ring_start = (ring_side-2) * (ring_side-2) + 1;
 	// This number falls at this index in the ring
 	let index_in_ring = input - ring_start;
 	
-	//println!("Input is in ring {}, which runs from {} to {}, and is {}x{}. Input is at index {}", ring, ring_start, ring_end, ring_side, ring_side, index_in_ring);
+	//println!("Input ring starts at {}, and is {}x{}. Input is at index {}", ring_start, ring_side, ring_side, index_in_ring);
 
 	// Corners of this ring are at (half_side, half_side) in each direction
 	let half_side = ring_side / 2;
@@ -417,9 +391,9 @@ fn main()
     //day1();
 	//day1b();
 	//day2();
-	//day3();
+	day3();
 	//day4();
-	day5();
+	//day5();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
