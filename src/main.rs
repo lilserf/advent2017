@@ -334,6 +334,7 @@ fn day4()
 	println!("File contains {} valid non-anagrammed passphrases.", count.1);
 }
 
+#[allow(dead_code)]
 fn day5()
 {
 	let input = get_input("day5.txt");
@@ -366,6 +367,271 @@ fn day5()
 	println!("Took {} steps", steps);
 }
 
+fn redist(banks:&mut Vec<u32>)
+{
+	let mut index;
+	let mut value;
+
+	// Scope to mutably borrow `banks`, since we need to mutably borrow it later too
+	{
+		// Unfortunately we can't just use iterator::max because it breaks ties by giving you the last tied element
+		// So first find the max value
+		let maxvalue = banks.iter().max().unwrap();
+		// Now enumerate (to include the index), filter only those where the value matches the max, and take the first one
+		let tuple = banks.iter().enumerate().filter(|&(_,x)| x == maxvalue).next().unwrap();
+		index = tuple.0;
+		value = *tuple.1;
+	}
+	
+	// Zero that bank
+	banks[index] = 0;
+
+	// Loop the banks dropping 1 into each
+	while value > 0
+	{
+		index = (index + 1) % banks.len();
+		banks[index] += 1;
+		value -= 1;
+	}
+
+	//println!("Vector is now {:?}", banks);
+}
+
+#[allow(dead_code)]
+fn day6()
+{
+	let mut input:Vec<u32> = vec![0, 5, 10, 0, 11, 14, 13, 4, 11, 8, 8, 7, 1, 4, 12, 11];
+	//let mut input:Vec<u32> = vec![0, 2, 7, 0];
+
+	let mut patterns = HashMap::new();
+
+	let mut count = 0;
+	let cycles;
+	loop
+	{
+		redist(&mut input);
+		count += 1;
+
+		if patterns.contains_key(&input)
+		{
+			cycles = count - patterns[&input];
+			break;
+		}
+
+		patterns.insert(input.clone(), count);
+	}
+
+	println!("Took {} cycles to reach a repeated pattern with a period of {} cycles", count, cycles);
+}
+
+// Wrapper for a usize used to denote a Node's ID
+#[derive(Clone,Copy,Debug,PartialEq,Eq)]
+pub struct NodeId
+{
+	index: usize,
+}
+
+// Tree node that takes generic data and has a parent and many children
+#[derive(Clone,Debug)]
+pub struct Node<T> 
+{
+	pub parent: Option<NodeId>,
+	pub children: Vec<NodeId>,
+
+	pub data: T,
+}
+
+// Tree class that represents the nodes as a flat vector
+#[derive(Debug)]
+pub struct IndexTree<T:Eq+Clone>
+{
+	nodes : Vec<Node<T>>,
+}
+
+// Implementation of IndexTree
+impl<T:Eq+Clone> IndexTree<T>
+{
+	// Constructor
+	fn new() -> IndexTree<T>
+	{
+		IndexTree { nodes:Vec::new(), }
+	}
+
+	// Make a new node with the given data and return its ID
+	fn new_node(&mut self, data: T) -> NodeId
+	{
+		let next_index = self.nodes.len();
+
+		self.nodes.push(Node
+		{
+			parent: None,
+			children: Vec::new(),
+			data: data,
+		});
+
+		NodeId{index: next_index}
+	}
+
+	// Get a mutable reference to a given node
+	fn get_node(&mut self, id: NodeId) -> &mut Node<T>
+	{
+		&mut self.nodes[id.index]
+	}
+
+	// Find the ID of a node matched by the given predicate
+	fn find_node<P>(&self, pred:&P) -> Option<NodeId>
+	where P: Fn(&T) -> bool,
+	{	
+		for i in 0..self.nodes.len()
+		{
+			if pred(&self.nodes[i].data)
+			{
+				return Some(NodeId{index:i});
+			}
+		}
+
+		return None;
+	}
+}
+
+// Struct to go in my tree
+#[derive(Eq,Clone,PartialEq,Debug)]
+pub struct Program
+{
+	name: String,
+	weight: u32,
+	total_weight: Option<u32>
+}
+
+// Given a node, calculate its total weight by recursing into its children if necessary
+fn calc_weight(tree:&mut IndexTree<Program>, root_id:NodeId) -> u32
+{
+	println!("Calculating total weight of {}",tree.get_node(root_id).data.name);
+	
+	// Clone the list of kids in a quick scope so that we're not borrowing the tree itself later
+	let kids:Vec<NodeId> = tree.get_node(root_id).children.clone();
+
+	// Weight of all kids
+	let mut kid_weight = 0;
+	// Weight of the most recent kid
+	let mut last_weight = 0;
+	for c in kids
+	{
+		// If this child doesn't already have a total weight, recurse
+		if let None = tree.get_node(c).data.total_weight
+		{
+			let total_weight = Some(calc_weight(tree, c));
+			tree.get_node(c).data.total_weight = total_weight;
+		}
+
+		// Get this child's total weight
+		let this_weight = tree.get_node(c).data.total_weight.unwrap();
+		// Add it to our kid_weight
+		kid_weight += this_weight;
+		println!("Node {}'s total weight is {}", tree.get_node(c).data.name, this_weight);
+
+		// If this weight doesn't match the last sibling, one of the two is the busted one
+		if last_weight != 0 && last_weight != this_weight
+		{
+			println!("Error! Node {}'s weight ({}) does not match its sibling ({})", tree.get_node(c).data.name, this_weight, last_weight);
+		}
+
+		// Remember the most recent weight we saw
+		last_weight = this_weight;
+	}
+
+	// Set the total weight onto our node and also return it
+	let total_weight = tree.get_node(root_id).data.weight + kid_weight;
+	tree.get_node(root_id).data.total_weight = Some(total_weight);
+	return total_weight;
+}
+
+#[allow(dead_code)]
+fn day7()
+{
+	let input = get_input("day7.txt");
+
+	let mut tree:IndexTree<Program> = IndexTree::new();
+
+	for l in input.lines()
+	{
+		let split:Vec<&str> = l.split(" ").collect();
+		let numlen = split[1].len();
+		let num:u32 = split[1][1..numlen-1].parse().unwrap();
+
+		let prog = Program 
+		{
+			name: split[0].to_string(),
+			weight: num,
+			total_weight: None,
+		};
+
+		println!("Processing node {}", prog.name);
+		let parent_id = match tree.find_node(&|d| d.name == prog.name)
+		{
+			None => tree.new_node(prog.clone()),
+			Some(parent_id) => parent_id,
+		};
+		
+		// Make sure the weight is set - in case the first occurence of this node was as a child
+		tree.get_node(parent_id).data = prog.clone();
+
+		if split.len() > 2
+		{
+			for child in split[3..].to_vec()
+			{
+				let child = child.trim_matches(',');
+				let prog = Program 
+				{
+					name: child.to_string(),
+					weight: 0,
+					total_weight: None
+				};
+
+				// Set the child ID by either finding an existing node or creating one
+				let child_id = match tree.find_node(&|d| d.name == prog.name)
+				{
+					Some(child_id) => { println!("  Found existing child {} at {}", prog.name, child_id.index); child_id },
+					None => { println!("  Creating new child {}", prog.name); tree.new_node(prog) },
+				};
+
+				// Get that child node and set its parent
+				tree.get_node(child_id).parent = Some(parent_id);
+
+				// Get the parent node and add this child
+				if !tree.get_node(parent_id).children.contains(&child_id)
+				{
+					tree.get_node(parent_id).children.push(child_id);
+				}
+			}
+		}
+	}
+
+	// Just arbitrarily start with the first node in the input file
+	let mut curr_node_id = NodeId{index:0};
+	let root_node_id:NodeId;
+	loop
+	{
+		let curr_node = tree.get_node(curr_node_id);
+		println!("Checking {:?} for a parent...",curr_node);
+		if let Some(n) = curr_node.parent
+		{
+			curr_node_id = n;
+		}
+		else
+		{
+			// Hey we found the root!
+			root_node_id = curr_node_id;
+			break;
+		}
+	}
+
+	println!("Root node is {}", tree.get_node(root_node_id).data.name);
+
+	// Now calculate the weight and write out which 
+	calc_weight(&mut tree, root_node_id);
+}
+
 // Helper function to read a string from an input file
 fn get_input(name:&str) -> String
 {
@@ -391,9 +657,11 @@ fn main()
     //day1();
 	//day1b();
 	//day2();
-	day3();
+	//day3();
 	//day4();
 	//day5();
+	//day6();
+	day7();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
