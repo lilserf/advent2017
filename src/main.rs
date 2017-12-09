@@ -632,6 +632,110 @@ fn day7()
 	calc_weight(&mut tree, root_node_id);
 }
 
+// Operation to perform
+enum Day8Operation
+{
+	Increment(String,i32),
+	Decrement(String,i32),
+	Invalid,
+}
+
+// Condition to check
+enum Condition
+{
+	Greater(String,i32),
+	Less(String,i32),
+	GreaterEqual(String,i32),
+	LessEqual(String,i32),
+	Equal(String,i32),
+	NotEqual(String,i32),
+	Invalid,
+}
+
+#[allow(dead_code)]
+fn day8()
+{
+	let input = get_input("day8.txt");
+
+	let mut instructions:Vec<(Condition, Day8Operation)> = Vec::new();
+	let mut registers:HashMap<String, i32> = HashMap::new();
+
+	// Parse the input into a list of instructions
+	for l in input.lines()
+	{
+		let split:Vec<&str> = l.split(" ").collect();
+
+		let op = match split[1]
+		{
+			"inc" => Day8Operation::Increment(split[0].to_string(), split[2].parse().unwrap()),
+			"dec" => Day8Operation::Decrement(split[0].to_string(), split[2].parse().unwrap()),
+			_ => Day8Operation::Invalid,
+		};
+
+		let cond = match split[5]
+		{
+			">" => Condition::Greater(split[4].to_string(), split[6].parse().unwrap()),
+			"<" => Condition::Less(split[4].to_string(), split[6].parse().unwrap()),
+			">=" => Condition::GreaterEqual(split[4].to_string(), split[6].parse().unwrap()),
+			"<=" => Condition::LessEqual(split[4].to_string(), split[6].parse().unwrap()),
+			"==" => Condition::Equal(split[4].to_string(), split[6].parse().unwrap()),
+			"!=" => Condition::NotEqual(split[4].to_string(), split[6].parse().unwrap()),
+			_ => Condition::Invalid,
+		};
+
+		instructions.push( (cond, op) );
+	}
+
+	// Track the highwater for part B
+	let mut highwater:i32 = 0;
+
+	// Execute the instructions
+	for instr in instructions
+	{
+		// First check the condition
+		let result = match instr.0
+		{
+			Condition::Greater(name, value) => *registers.entry(name).or_insert(0) > value,
+			Condition::Less(name, value) => *registers.entry(name).or_insert(0) < value,
+			Condition::GreaterEqual(name, value) => *registers.entry(name).or_insert(0) >= value,
+			Condition::LessEqual(name, value) => *registers.entry(name).or_insert(0) <= value,
+			Condition::Equal(name, value) => *registers.entry(name).or_insert(0) == value,
+			Condition::NotEqual(name, value) => *registers.entry(name).or_insert(0) != value,
+			_ => false,
+		};
+
+		if result
+		{
+			// Perform the instruction
+			match instr.1
+			{
+				Day8Operation::Increment(name, value) =>
+				{
+					*registers.entry(name).or_insert(0) += value;
+				},
+				Day8Operation::Decrement(name, value) => 
+				{
+					*registers.entry(name).or_insert(0) -= value;
+				},
+				_ => {},
+			};
+
+			// Check the highwater
+			let max = registers.values().max().unwrap();
+			if *max > highwater
+			{
+				highwater = *max;
+			}
+
+		}
+
+	}
+
+	let max = registers.values().max().unwrap();
+	println!("Maximum register value after one run is {}", max);
+	println!("Highwater register value was {}", highwater);
+}
+
 // Helper function to read a string from an input file
 fn get_input(name:&str) -> String
 {
@@ -661,7 +765,8 @@ fn main()
 	//day4();
 	//day5();
 	//day6();
-	day7();
+	//day7();
+	day8();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
