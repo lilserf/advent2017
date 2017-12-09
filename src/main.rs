@@ -736,6 +736,35 @@ fn day8()
 	println!("Highwater register value was {}", highwater);
 }
 
+#[allow(dead_code)]
+fn day9()
+{
+	let input = get_input("day9.txt");
+	//let input = "{{<ab>},{<ab>},{<ab>},{<ab>}}";
+
+	let mut score = 0;
+	let mut curr_depth = 0;
+	let mut in_garbage = false;
+	let mut garbage_char_count = 0;
+
+	let mut iter = input.chars();
+	while let Some(c) = iter.next()
+	{
+		match c
+		{
+			'!' => if in_garbage { iter.next(); },
+			'<' => if !in_garbage { in_garbage = true; } else { garbage_char_count += 1 },
+			'>' => if in_garbage { in_garbage = false; },
+			'{' => if !in_garbage { curr_depth += 1; score += curr_depth; } else { garbage_char_count += 1; },
+			'}' => if !in_garbage { curr_depth -= 1; } else { garbage_char_count += 1; },
+			_ => if in_garbage { garbage_char_count += 1; },
+		};
+	}
+
+	println!("Score is {}", score);
+	println!("Garbage char count is {}", garbage_char_count);
+}
+
 // Helper function to read a string from an input file
 fn get_input(name:&str) -> String
 {
@@ -766,7 +795,8 @@ fn main()
 	//day5();
 	//day6();
 	//day7();
-	day8();
+	//day8();
+	day9();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
