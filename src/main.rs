@@ -765,6 +765,93 @@ fn day9()
 	println!("Garbage char count is {}", garbage_char_count);
 }
 
+fn hash(array:&mut [u8;256], lengths:Vec<usize>, curr_pos:usize, skip:usize) -> (usize, usize)
+{
+	let mut curr_pos = curr_pos;
+	let mut skip = skip;
+
+	//let mut array = array.clone();
+
+	for length in lengths.iter()
+	{
+		if *length == 0 || *length == 1
+		{
+			// do nothing! no reversal necessary
+		}
+		else if curr_pos+length < array.len()
+		{
+			array[curr_pos..curr_pos+length].reverse();
+		}
+		else
+		{
+			let overlap = curr_pos + length - array.len();	
+			let mut rev:Vec<u8> = array[curr_pos..].to_vec();
+			rev.append(&mut array[..overlap].to_vec());
+			rev.reverse();
+			let mut copy_pos = curr_pos;
+			for x in rev
+			{
+				array[copy_pos] = x;
+				copy_pos += 1;
+				copy_pos %= array.len();
+			}
+		}
+		curr_pos += length + skip;
+		curr_pos %= array.len();
+		skip += 1;
+	}
+
+	return(curr_pos, skip);
+}
+
+#[allow(dead_code)]
+fn day10()
+{
+	let input = [206,63,255,131,65,80,238,157,254,24,133,2,16,0,1,3];
+	let mut list:[u8;256] = [0;256];
+
+	//let input = [3,4,1,5];
+	//let mut list:[u8;5] = [0, 1, 2, 3, 4];
+
+	for (i,x) in list.as_mut().into_iter().enumerate()
+	{
+		*x = i as u8; 
+	}
+
+	hash(&mut list, input.to_vec(), 0, 0);
+
+	println!("First two numbers are {} x {} = {}", list[0], list[1], list[0] as u32 * list[1] as u32);
+
+	// Reset the list
+	for (i,x) in list.as_mut().into_iter().enumerate()
+	{
+		*x = i as u8; 
+	}
+
+	let input = "206,63,255,131,65,80,238,157,254,24,133,2,16,0,1,3";
+	//let input = "AoC 2017";
+	let mut input_codes:Vec<usize> = input.bytes().map(|x| x as usize).collect();
+	input_codes.extend(vec![17,31,73,47,23]);
+
+	let mut params = (0, 0);
+	for _ in 0..64
+	{
+		params = hash(&mut list, input_codes.clone(), params.0, params.1);
+
+		let debug:Vec<u8> = list[0..10].to_vec();
+		println!("Array now {:?}", debug);
+		println!("  curr pos now {}, skip now {}", params.0, params.1);
+	}
+
+	let final_hash:Vec<String> = list
+		.chunks(16)
+		.map(|c| c.iter().fold(0, |acc, &x| acc ^ x))
+		.map(|b| format!("{:02x}", b))
+		.collect();
+	let stringified:String = final_hash.join("");
+	println!("Final hash is {}", stringified);
+}
+
 // Helper function to read a string from an input file
 fn get_input(name:&str) -> String
 {
@@ -796,7 +883,8 @@ fn main()
 	//day6();
 	//day7();
 	//day8();
-	day9();
+	//day9();
+	day10();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
