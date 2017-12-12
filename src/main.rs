@@ -1,3 +1,4 @@
+use std::cmp;
 use std::fs::File;
 use std::io::prelude::*;
 use std::collections::HashMap;
@@ -852,6 +853,62 @@ fn day10()
 	println!("Final hash is {}", stringified);
 }
 
+#[allow(dead_code)]
+fn day11()
+{
+	let input = get_input("day11.txt");
+
+	// Cube coordinates for my hex grid
+	let mut start:(i32,i32,i32) = (0, 0, 0);
+
+	let mut manhattan = 0;
+	let mut max_manhattan = 0;
+	let steps = input.split(",");
+	for s in steps
+	{
+		match s
+		{
+			"n" => // Y+1, Z-1
+			{
+				start.1 += 1; 
+				start.2 -= 1;
+			},
+			"s" => // Y-1, Z+1
+			{
+				start.1 -= 1;
+				start.2 += 1;
+			},
+			"ne" => // X+1, Z-1
+			{
+				start.0 += 1;
+				start.2 -= 1;
+			},
+			"sw" => // X-1, Z+1
+			{
+				start.0 -= 1;
+				start.2 += 1;
+			},
+			"se" => // X+1, Y-1
+			{
+				start.0 += 1;
+				start.1 -= 1;
+			},
+			"nw" => // X-1, Y+1
+			{
+				start.0 -= 1;
+				start.1 += 1;
+			},
+			_ => {}
+		}
+
+		manhattan = (start.0.abs() + start.1.abs() + start.2.abs()) / 2;
+		max_manhattan = cmp::max(manhattan, max_manhattan);
+	}
+	println!("Ended up at {:?}",start);
+	println!("Manhattan distance is {}", manhattan);
+	println!("Highwater distance is {}", max_manhattan);
+}
+
 // Helper function to read a string from an input file
 fn get_input(name:&str) -> String
 {
@@ -884,7 +941,8 @@ fn main()
 	//day7();
 	//day8();
 	//day9();
-	day10();
+	//day10();
+	day11();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
