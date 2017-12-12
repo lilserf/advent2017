@@ -834,6 +834,7 @@ fn day10()
 	let mut input_codes:Vec<usize> = input.bytes().map(|x| x as usize).collect();
 	input_codes.extend(vec![17,31,73,47,23]);
 
+	// Run 64 runs of this hashing algorithm
 	let mut params = (0, 0);
 	for _ in 0..64
 	{
@@ -844,6 +845,7 @@ fn day10()
 		println!("  curr pos now {}, skip now {}", params.0, params.1);
 	}
 
+	// This is my favorite code - chunks of 16 that get folded to XOR them
 	let final_hash:Vec<String> = list
 		.chunks(16)
 		.map(|c| c.iter().fold(0, |acc, &x| acc ^ x))
@@ -909,6 +911,73 @@ fn day11()
 	println!("Highwater distance is {}", max_manhattan);
 }
 
+#[allow(dead_code)]
+fn day12()
+{
+	let input = get_input("day12.txt");
+
+	// Store the connections in a hashmap
+	let mut map = HashMap::new();
+
+	// Parse the input and set up the map
+	for l in input.lines()
+	{
+		let split:Vec<&str> = l.split("<->").collect();
+
+		let id:u32 = split[0].trim().parse().unwrap();
+		let outputs:Vec<&str> = split[1].split(", ").collect();
+		let outputs:Vec<u32> = outputs.into_iter().map(|x| x.trim().parse().unwrap()).collect();
+
+		map.insert(id, outputs);
+	}
+
+	// Count the total distinct groups of programs
+	let mut groups = Vec::new();
+	
+	// Loop through the keys of our map
+	for key in map.keys()
+	{
+		// Init variables for this iteration
+		let mut curr_group = HashSet::new();
+		let mut stack = Vec::new();
+
+		// Only bother with this key if it's not already in a found group
+		if !groups.iter().any(|c:&HashSet<u32>| c.contains(key))
+		{
+			stack.push(key);
+		}
+		else
+		{
+			continue;
+		}
+
+		// While we still have something on our stack
+		while let Some(ref num) = stack.pop()
+		{
+			// Iterate its connections
+			for x in map[num].iter()
+			{
+				// Add it to the group
+				let added = curr_group.insert(*x);
+				if added
+				{
+					// If it's new, add it to the stack for processing
+					stack.push(x);
+				}
+			}
+		}
+
+		// Finished with a group, add it to the group list
+		groups.push(curr_group.clone());
+		// Part A answer for group zero is here
+		println!("There are {} programs in group {}", curr_group.len(), key);
+	}
+
+	// Part B answer
+	println!("There are {} unique groups:\n{:?}", groups.len(), groups);
+
+}
+
 // Helper function to read a string from an input file
 fn get_input(name:&str) -> String
 {
@@ -942,7 +1011,8 @@ fn main()
 	//day8();
 	//day9();
 	//day10();
-	day11();
+	//day11();
+	day12();
 
 	println!("Elapsed: {} ms", as_msecs(now.elapsed()));
 }
